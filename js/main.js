@@ -26,6 +26,9 @@ var config = {
     //in seconds
     aliveThreshold: 60,
 
+    redisHostName: 'localhost',
+    redisPort: 6379,
+
     // in ms
     clientTimerLength: 5000
 };
@@ -47,7 +50,7 @@ Device.prototype = {
         this._client.on('data', proxy(this.onData, this));
         this._client.on('end', proxy(this.onEnd, this));
 
-        this.redisClient = redis.createClient(null, null, {detect_buffers: false});
+        this.redisClient = redis.createClient(config.redisPort, config.redisHostName, {detect_buffers: false});
         this.redisClient.on("error", proxy(this.onRedisError, this));
         this.redisClient.on("message", proxy(this.onRedisMessage, this));
     },
