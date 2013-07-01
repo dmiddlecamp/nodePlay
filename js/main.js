@@ -41,6 +41,7 @@ Device.prototype = {
     _client: null,
     _id: null,
     _lastAlive: null,
+    _aliveTimerHandle: null,
     isAuthed: false,
 
     init: function () {
@@ -64,7 +65,7 @@ Device.prototype = {
         }
 
         this._client.write("alive\n");
-        setTimeout(proxy(this.startAliveTimer, this), config.clientTimerLength);
+        this._aliveTimerHandle = setTimeout(proxy(this.startAliveTimer, this), config.clientTimerLength);
     },
 
     onRedisError: function (err) {
@@ -82,12 +83,24 @@ Device.prototype = {
 
 
     _destroy: function () {
+        if (!this._client) {
+            console.log('double dispose');
+            return;
+        }
+
         console.log('destroying device');
         this._client.end();
         delete this._client;
+        this._client = null;
 
         this.redisClient.unsubscribe();
         this.redisClient.end();
+
+
+        if (this._aliveTimerHandle) {
+            clearTimeout(this._aliveTimerHandle);
+        }
+        this._aliveTimerHandle = null;
 
         //todo: dispose redis handle?
 
@@ -153,7 +166,6 @@ Device.prototype = {
 
 
 
-
 var serverLoop = function (client) {
     console.log('client connected');
 
@@ -163,8 +175,6 @@ var serverLoop = function (client) {
     catch(ex) {
         console.log('boom ' + ex);
     }
-
-
 };
 
 
@@ -172,3 +182,7 @@ var server = net.createServer(serverLoop);
 server.listen(8124, function () { //'listening' listener
     console.log('server bound');
 });
+
+
+
+
