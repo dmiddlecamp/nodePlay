@@ -50,9 +50,15 @@ Device.prototype = {
         this._client.on('data', proxy(this.onData, this));
         this._client.on('end', proxy(this.onEnd, this));
 
-        this.redisClient = redis.createClient(config.redisPort, config.redisHostName, {detect_buffers: false});
+        this.redisClientPublish = this.createRedisClient();
+        this.redisClient = this.createRedisClient();
+
         this.redisClient.on("error", proxy(this.onRedisError, this));
         this.redisClient.on("message", proxy(this.onRedisMessage, this));
+    },
+
+    createRedisClient : function () {
+        this.redisClient = redis.createClient(config.redisPort, config.redisHostName, {detect_buffers: false});
     },
 
     startAliveTimer: function (first) {
@@ -145,7 +151,7 @@ Device.prototype = {
         }
         else {
             //send to our redis Client
-            this.redisClient.publish(this._id, msg);
+            this.redisClientPublish.publish(this._id, msg);
         }
     },
     onEnd: function () {
