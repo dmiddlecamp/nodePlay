@@ -18,7 +18,12 @@ var moment = require("moment");
 
 function proxy(fn, scope) {
     return function () {
-        return fn.apply(scope, arguments);
+        try {
+            return fn.apply(scope, arguments);
+        }
+        catch (ex) {
+            console.log('error bubbled up ' + ex);
+        }
     }
 }
 
@@ -67,7 +72,15 @@ Device.prototype = {
             }
         }
 
-        this._client.write("alive\n");
+        try {
+            if (this._client) {
+                this._client.write("alive\n");
+            }
+        }
+        catch (ex) {
+            this._destroy();
+            return;
+        }
         this._aliveTimerHandle = setTimeout(proxy(this.startAliveTimer, this), config.clientTimerLength);
     },
 
@@ -81,7 +94,7 @@ Device.prototype = {
         }
 
         this._client.write(msg + '\n');
-        console.log("Message sent to socket");
+        //console.log("Message sent to socket");
     },
 
 
@@ -91,7 +104,7 @@ Device.prototype = {
             return;
         }
 
-        console.log('destroying device');
+        //console.log('destroying device');
         this._client.end();
         delete this._client;
         this._client = null;
@@ -107,7 +120,7 @@ Device.prototype = {
 
         //todo: dispose redis handle?
 
-        console.log('object destroyed?');
+        //console.log('object destroyed?');
     },
 
     _numAuthTries: 0,
@@ -137,7 +150,7 @@ Device.prototype = {
         var msg = data.toString();
         msg = (msg) ? msg.trim() : "";
 
-        console.log('data received ' + msg);
+        //console.log('data received ' + msg);
 
         if (!this.isAuthed) {
             this._tryAuth(msg);
@@ -167,15 +180,13 @@ Device.prototype = {
 };
 
 
-
-
 var serverLoop = function (client) {
     console.log('client connected');
 
     try {
         var d = new Device(this, client);
     }
-    catch(ex) {
+    catch (ex) {
         console.log('boom ' + ex);
     }
 };
@@ -184,4 +195,8 @@ var serverLoop = function (client) {
 var server = net.createServer(serverLoop);
 server.listen(8124, function () { //'listening' listener
     console.log('server bound');
+});
+
+server.on('error', function() {
+    console.log("???");
 });

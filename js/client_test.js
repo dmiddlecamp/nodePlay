@@ -1,4 +1,4 @@
-
+var net = require('net');
 
 
 //create client
@@ -11,29 +11,37 @@ function proxy(fn, scope) {
 }
 
 
-var TalkativeSpark = function(id, msg, client) {
+var TalkativeSpark = function (id, msg, client) {
     this._id = id;
     this._msg = msg;
-    this._client = client;
+
+    var that = this;
+    this._client = net.connect({port: 8124}, function (client) {
+        that.init();
+    });
 };
 TalkativeSpark.prototype = {
     isAuthed: false,
     isIdentified: false,
 
-    init: function() {
+    init: function () {
+        if (!this._client) {
+            console.log("error no client connection!");
+        }
+
         this._client.on('data', proxy(this.onData, this));
         this._client.on('end', proxy(this.onEnd, this));
 
         this.handshake();
     },
 
-    handshake: function() {
+    handshake: function () {
         this.isIdentified = this.isAuthed = false;
         this._client.write('secret\n');
     },
 
 
-    onData: function(data) {
+    onData: function (data) {
         var msg = data.toString();
         msg = (msg) ? msg.trim() : "";
 
@@ -46,12 +54,12 @@ TalkativeSpark.prototype = {
             this.startTimer();
         }
     },
-    onEnd: function() {
+    onEnd: function () {
         this._destroy();
     },
 
 
-    _destroy: function() {
+    _destroy: function () {
         if (!this._client) {
             console.log('double dispose');
             return;
@@ -64,25 +72,21 @@ TalkativeSpark.prototype = {
 
     },
 
-    startTimer: function() {
-        client.write('alive\n');
+    startTimer: function () {
+        console.log('client sending alive');
+        this._client.write('alive\n');
 
-        this._aliveTimerHandle = setTimeout(proxy(this.startTimer, this), config.clientTimerLength);
+        this._client.write(this._msg + '\n');
+
+        this._aliveTimerHandle = setTimeout(proxy(this.startTimer, this), 7500);
     }
 };
 
+for (var i = 0; i < 1000; i++) {
+
+    var spark = new TalkativeSpark("test" + i, "hello world");
 
 
-var net = require('net');
-var client = net.connect({port: 8124},
-    function() { //'connect' listener
-  console.log('client connected');
-  client.write('world!\r\n');
-});
-client.on('data', function(data) {
-  console.log(data.toString());
-  client.end();
-});
-client.on('end', function() {
-  console.log('client disconnected');
-});
+}
+
+
