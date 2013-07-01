@@ -56,9 +56,15 @@ Device.prototype = {
         this._client.on('data', proxy(this.onData, this));
         this._client.on('end', proxy(this.onEnd, this));
 
-        this.redisClient = redis.createClient(config.redisPort, config.redisHostName, {detect_buffers: false});
+        this.redisClientPublish = this.createRedisClient();
+        this.redisClient = this.createRedisClient();
+
         this.redisClient.on("error", proxy(this.onRedisError, this));
         this.redisClient.on("message", proxy(this.onRedisMessage, this));
+    },
+
+    createRedisClient : function () {
+        return redis.createClient(config.redisPort, config.redisHostName, {detect_buffers: false});
     },
 
     startAliveTimer: function (first) {
@@ -156,8 +162,11 @@ Device.prototype = {
             this._tryAuth(msg);
         }
         else if (this._askedWho && !this._id) {
+            console.log('authed and asked who, message is:' + msg);
             this._id = msg;
             this._askedWho = false;
+
+            console.log('this._id:' + this._id);
 
             //hand off to redis
             this.redisClient.subscribe(this._id);
@@ -171,7 +180,7 @@ Device.prototype = {
         }
         else {
             //send to our redis Client
-            this.redisClient.publish(this._id, msg);
+            this.redisClientPublish.publish(this._id, msg);
         }
     },
     onEnd: function () {
