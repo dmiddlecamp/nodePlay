@@ -56,7 +56,7 @@ Device.prototype = {
         this._client.on('data', proxy(this.onData, this));
         this._client.on('end', proxy(this.onEnd, this));
 
-        this.redisClientPublish = this.createRedisClient();
+
         this.redisClient = this.createRedisClient();
 
         this.redisClient.on("error", proxy(this.onRedisError, this));
@@ -180,7 +180,9 @@ Device.prototype = {
         }
         else {
             //send to our redis Client
-            this.redisClientPublish.publish(this._id, msg);
+            var pubClient = this.createRedisClient();
+            pubClient.publish(this._id, msg);
+            pubClient.end();
         }
     },
     onEnd: function () {
