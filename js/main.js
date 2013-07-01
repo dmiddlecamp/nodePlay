@@ -1,8 +1,8 @@
 var cluster = require('cluster');
 var http = require('http');
 var net = require('net');
-var redis = require("redis")
-
+var redis = require("redis");
+var moment = require("moment");
 
 // FANCY THREAD PER CPU CORE STUFF
 //http://nodejs.org/api/cluster.html#cluster_worker_process
@@ -22,28 +22,49 @@ function proxy(fn, scope) {
     }
 }
 
+var config = {
+    //in seconds
+    aliveThreshold: 60,
 
-var device = function (parent, client) {
+    // in ms
+    clientTimerLength: 5000
+};
+
+
+var Device = function (parent, client) {
     this._parent = parent;
     this._client = client;
     this.init();
 };
-device.prototype = {
+Device.prototype = {
     _parent: null,
     _client: null,
     _id: null,
+    _lastAlive: null,
     isAuthed: false,
-
 
     init: function () {
         this._client.on('data', proxy(this.onData, this));
         this._client.on('end', proxy(this.onEnd, this));
 
-        this.redisClient = redis.createClient();
+        this.redisClient = redis.createClient(null, null, {detect_buffers: false});
         this.redisClient.on("error", proxy(this.onRedisError, this));
         this.redisClient.on("message", proxy(this.onRedisMessage, this));
+    },
 
-        //TODO: init alive timer
+    startAliveTimer: function (first) {
+        if (!first && this._lastAlive) {
+            //have I received an alive in the last xx seconds?
+            //send an alive to the client
+            var delta = moment().diff(this._lastAlive, 'seconds');
+            if (delta > config.aliveThreshold) {
+                this._destroy();
+                return;
+            }
+        }
+
+        this._client.write("alive\n");
+        setTimeout(proxy(this.startAliveTimer, this), config.clientTimerLength);
     },
 
     onRedisError: function (err) {
@@ -61,6 +82,7 @@ device.prototype = {
 
 
     _destroy: function () {
+        console.log('destroying device');
         this._client.end();
         delete this._client;
 
@@ -72,10 +94,15 @@ device.prototype = {
         console.log('object destroyed?');
     },
 
+    _numAuthTries: 0,
     _tryAuth: function (msg) {
+
         if (msg == 'secret') {
             this.isAuthed = true;
             this.askWho();
+        }
+        else if (this._numAuthTries < 3) {
+            this._numAuthTries++;
         }
         else {
             this._destroy();
@@ -92,6 +119,8 @@ device.prototype = {
      */
     onData: function (data) {
         var msg = data.toString();
+        msg = (msg) ? msg.trim() : "";
+
         console.log('data received ' + msg);
 
         if (!this.isAuthed) {
@@ -103,6 +132,13 @@ device.prototype = {
 
             //hand off to redis
             this.redisClient.subscribe(this._id);
+            this.startAliveTimer(true);
+        }
+        else if (msg == "alive") {
+            this._lastAlive = new Date();
+        }
+        else if (msg == "_goodbye") {
+            this._destroy();
         }
         else {
             //send to our redis Client
@@ -110,24 +146,25 @@ device.prototype = {
         }
     },
     onEnd: function () {
-        console.log('socket closed');
-
+        this._destroy();
     }
 };
+
+
+
 
 
 var serverLoop = function (client) {
     console.log('client connected');
 
-    client.on('data', function (data) {
+    try {
+        var d = new Device(this, client);
+    }
+    catch(ex) {
+        console.log('boom ' + ex);
+    }
 
-        client.end();
-    });
-    c.on('end', function () {
-        console.log('server disconnected');
-    });
-    c.write('hello\r\n');
-    c.pipe(c);
+
 };
 
 
