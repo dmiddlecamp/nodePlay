@@ -53,6 +53,9 @@ TalkativeSpark.prototype = {
             this.isIdentified = true;
             this.startTimer();
         }
+        else {
+            console.log('received: ' + msg);
+        }
     },
     onEnd: function () {
         this._destroy();
