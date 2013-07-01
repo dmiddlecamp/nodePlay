@@ -76,20 +76,17 @@ TalkativeSpark.prototype = {
     },
 
     startTimer: function () {
-        console.log('client sending alive');
-        this._client.write('alive\n');
 
+        this._client.write('alive\n');
         this._client.write(this._msg + '\n');
+        console.log('client sending alive / msg ');
 
         this._aliveTimerHandle = setTimeout(proxy(this.startTimer, this), 7500);
     }
 };
 
 for (var i = 0; i < 1000; i++) {
-
     var spark = new TalkativeSpark("test" + i, "hello world");
-
-
 }
 
 
