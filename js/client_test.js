@@ -62,7 +62,7 @@ TalkativeSpark.prototype = {
         delete this._client;
         this._client = null;
 
-    },  
+    },
 
     startTimer: function() {
         client.write('alive\n');
