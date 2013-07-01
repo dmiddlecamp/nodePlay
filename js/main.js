@@ -58,7 +58,7 @@ Device.prototype = {
     },
 
     createRedisClient : function () {
-        this.redisClient = redis.createClient(config.redisPort, config.redisHostName, {detect_buffers: false});
+        return redis.createClient(config.redisPort, config.redisHostName, {detect_buffers: false});
     },
 
     startAliveTimer: function (first) {
@@ -136,8 +136,11 @@ Device.prototype = {
             this._tryAuth(msg);
         }
         else if (this._askedWho && !this._id) {
+            console.log('authed and asked who, message is:' + msg);
             this._id = msg;
             this._askedWho = false;
+
+            console.log('this._id:' + this._id);
 
             //hand off to redis
             this.redisClient.subscribe(this._id);
