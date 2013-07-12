@@ -1,0 +1,26 @@
+{
+  "name": "toy-device-service",
+  "version": "0.0.0",
+  "description": "A toy spark device service for benchmarking purposes",
+  "dependencies": {
+    "redis": "0.8.x",
+    "moment": "2.1.x"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "node js/main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/dmiddlecamp/nodePlay.git"
+  },
+  "author": {"name": "David Middlecamp"},
+  "contributors": [
+    {"name": "David Middlecamp"},
+    {"name": "Jacob Dalton"},
+    {"name": "Zachary Crockett"}
+  ],
+  "bugs": {
+    "url": "https://github.com/dmiddlecamp/nodePlay/issues"
+  }
+}

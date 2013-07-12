@@ -31,7 +31,7 @@ var config = {
     //in seconds
     aliveThreshold: 60,
 
-    redisHostName: 'localhost',
+    redisHostName: process.env.REDIS_HOST ? process.env.REDIS_HOST : 'localhost',
     redisPort: 6379,
 
     // in ms
@@ -204,7 +204,8 @@ var serverLoop = function (client) {
 
 
 var server = net.createServer(serverLoop);
-server.listen(8124, function () { //'listening' listener
+var port = process.env.DEVICE_SERVICE_PORT ? process.env.DEVICE_SERVICE_PORT : 8124;
+server.listen(port, function () { //'listening' listener
     console.log('server bound');
 });
 
