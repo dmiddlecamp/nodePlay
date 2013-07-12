@@ -181,8 +181,8 @@ Device.prototype = {
         else {
             //send to our redis Client
             var pubClient = this.createRedisClient();
-            pubClient.publish(this._id, msg);
-            pubClient.end();
+            pubClient.publish("~" + this._id, msg);
+            pubClient.quit();
         }
     },
     onEnd: function () {
